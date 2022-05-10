@@ -21,68 +21,66 @@ abstract private[scerde] class SerializeInstances {
 
   implicit val serializeForBool: Serialize[Boolean] = new Serialize[Boolean] {
     def serialize[S: Serializer](value: Boolean, serializer: S): Serializer[S]#Result =
-      Serializer[S].serializeBool(serializer, value)
+      serializer.serializeBool(value)
   }
 
   implicit val serializeForByte: Serialize[Byte] = new Serialize[Byte] {
     def serialize[S: Serializer](value: Byte, serializer: S): Serializer[S]#Result =
-      Serializer[S].serializeByte(serializer, value)
+      serializer.serializeByte(value)
   }
 
   implicit val serializeForShort: Serialize[Short] = new Serialize[Short] {
     def serialize[S: Serializer](value: Short, serializer: S): Serializer[S]#Result =
-      Serializer[S].serializeShort(serializer, value)
+      serializer.serializeShort(value)
   }
 
   implicit val serializeForInt: Serialize[Int] = new Serialize[Int] {
     def serialize[S: Serializer](value: Int, serializer: S): Serializer[S]#Result =
-      Serializer[S].serializeInt(serializer, value)
+      serializer.serializeInt(value)
   }
 
   implicit val serializeForLong: Serialize[Long] = new Serialize[Long] {
     def serialize[S: Serializer](value: Long, serializer: S): Serializer[S]#Result =
-      Serializer[S].serializeLong(serializer, value)
+      serializer.serializeLong(value)
   }
 
   implicit val serializeForFloat: Serialize[Float] = new Serialize[Float] {
     def serialize[S: Serializer](value: Float, serializer: S): Serializer[S]#Result =
-      Serializer[S].serializeFloat(serializer, value)
+      serializer.serializeFloat(value)
   }
 
   implicit val serializeForDouble: Serialize[Double] = new Serialize[Double] {
     def serialize[S: Serializer](value: Double, serializer: S): Serializer[S]#Result =
-      Serializer[S].serializeDouble(serializer, value)
+      serializer.serializeDouble(value)
   }
 
   implicit val serializeForChar: Serialize[Char] = new Serialize[Char] {
     def serialize[S: Serializer](value: Char, serializer: S): Serializer[S]#Result =
-      Serializer[S].serializeChar(serializer, value)
+      serializer.serializeChar(value)
   }
 
   implicit val serializeForString: Serialize[String] = new Serialize[String] {
     def serialize[S: Serializer](value: String, serializer: S): Serializer[S]#Result =
-      Serializer[S].serializeString(serializer, value)
+      serializer.serializeString(value)
   }
 
   implicit val serializeForBytes: Serialize[Array[Byte]] = new Serialize[Array[Byte]] {
     def serialize[S: Serializer](value: Array[Byte], serializer: S): Serializer[S]#Result =
-      Serializer[S].serializeBytes(serializer, value)
+      serializer.serializeBytes(value)
   }
 
   implicit def serializeForOption[T](implicit ev: Serialize[T]): Serialize[Option[T]] =
     new Serialize[Option[T]] {
       def serialize[S: Serializer](value: Option[T], serializer: S): Serializer[S]#Result =
         value match {
-          case Some(v) => Serializer[S].serializeSome(serializer, v)
-          case None => Serializer[S].serializeNone(serializer)
+          case Some(v) => serializer.serializeSome(v)
+          case None => serializer.serializeNone()
         }
     }
 
   implicit val serializeForUnit: Serialize[Unit] = new Serialize[Unit] {
-    def serialize[S: Serializer](value: Unit, serializer: S): Serializer[S]#Result = {
-      void(value)
-      Serializer[S].serializeUnit(serializer)
-    }
+    def serialize[S: Serializer](value: Unit, serializer: S): Serializer[S]#Result =
+      serializer.serializeUnit()
   }
 
 }

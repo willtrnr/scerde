@@ -131,70 +131,72 @@ abstract private[scerde] class DeserializerInstances extends DeserializerPlatfor
 
   implicit val deserializerForBool: Deserializer[Boolean] = new Deserializer[Boolean] {
     override def deserializeAny[V: Visitor](self: Boolean, visitor: V): Result[Visitor[V]#Value] =
-      Visitor[V].visitBool[Err](visitor, self)
+      visitor.visitBool(self)
   }
 
   implicit val deserializerForByte: Deserializer[Byte] = new Deserializer[Byte] {
     override def deserializeAny[V: Visitor](self: Byte, visitor: V): Result[Visitor[V]#Value] =
-      Visitor[V].visitByte[Err](visitor, self)
+      visitor.visitByte(self)
   }
 
   implicit val deserializerForShort: Deserializer[Short] = new Deserializer[Short] {
     override def deserializeAny[V: Visitor](self: Short, visitor: V): Result[Visitor[V]#Value] =
-      Visitor[V].visitShort[Err](visitor, self)
+      visitor.visitShort(self)
   }
 
   implicit val deserializerForInt: Deserializer[Int] = new Deserializer[Int] {
     override def deserializeAny[V: Visitor](self: Int, visitor: V): Result[Visitor[V]#Value] =
-      Visitor[V].visitInt[Err](visitor, self)
+      visitor.visitInt(self)
   }
 
   implicit val deserializerForLong: Deserializer[Long] = new Deserializer[Long] {
     override def deserializeAny[V: Visitor](self: Long, visitor: V): Result[Visitor[V]#Value] =
-      Visitor[V].visitLong[Err](visitor, self)
+      visitor.visitLong(self)
   }
 
   implicit val deserializerForFloat: Deserializer[Float] = new Deserializer[Float] {
     override def deserializeAny[V: Visitor](self: Float, visitor: V): Result[Visitor[V]#Value] =
-      Visitor[V].visitFloat[Err](visitor, self)
+      visitor.visitFloat(self)
   }
 
   implicit val deserializerForDouble: Deserializer[Double] = new Deserializer[Double] {
     override def deserializeAny[V: Visitor](self: Double, visitor: V): Result[Visitor[V]#Value] =
-      Visitor[V].visitDouble[Err](visitor, self)
+      visitor.visitDouble(self)
   }
 
   implicit val deserializerForChar: Deserializer[Char] = new Deserializer[Char] {
     override def deserializeAny[V: Visitor](self: Char, visitor: V): Result[Visitor[V]#Value] =
-      Visitor[V].visitChar[Err](visitor, self)
+      visitor.visitChar(self)
   }
 
   implicit val deserializerForString: Deserializer[String] = new Deserializer[String] {
     override def deserializeAny[V: Visitor](self: String, visitor: V): Result[Visitor[V]#Value] =
-      Visitor[V].visitString[Err](visitor, self)
+      visitor.visitString(self)
   }
 
   implicit val deserializerForBytes: Deserializer[Array[Byte]] = new Deserializer[Array[Byte]] {
     override def deserializeAny[V: Visitor](self: Array[Byte], visitor: V): Result[Visitor[V]#Value] =
-      Visitor[V].visitBytes[Err](visitor, self)
+      visitor.visitBytes(self)
   }
 
   implicit def deserializerForOption[T](implicit ev: Deserializer[T]): Deserializer[Option[T]] =
     new Deserializer[Option[T]] {
+
       override type Err = Deserializer[T]#Err
 
       override def error: Error[Err] = ev.error
 
       override def deserializeAny[V: Visitor](self: Option[T], visitor: V): Result[Visitor[V]#Value] =
         self match {
-          case Some(value) => Visitor[V].visitSome(visitor, value)
-          case None => Visitor[V].visitNone[Err](visitor)
+          case Some(value) => visitor.visitSome(value)
+          case None => visitor.visitNone[Err]()
         }
+
     }
 
   implicit val deserializerForUnit: Deserializer[Unit] = new Deserializer[Unit] {
     override def deserializeAny[V: Visitor](self: Unit, visitor: V): Result[Visitor[V]#Value] =
-      Visitor[V].visitUnit[Err](visitor)
+      visitor.visitUnit()
   }
 
 }

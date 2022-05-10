@@ -7,10 +7,8 @@ abstract private[scerde] class DeserializerPlatformInstances {
 
   implicit val deserializerForByteBuffer: Deserializer[ByteBuffer] = new Deserializer[ByteBuffer] {
 
-    override def deserializeAny[V: Visitor](self: ByteBuffer, visitor: V): Result[Visitor[V]#Value] = {
-      void(self, visitor)
+    override def deserializeAny[V: Visitor](self: ByteBuffer, visitor: V): Result[Visitor[V]#Value] =
       Left(new UnsupportedOperationException("non self-describing format"))
-    }
 
     override def deserializeBool[V: Visitor](self: ByteBuffer, visitor: V): Result[Visitor[V]#Value] = etri {
       visitor.visitBool(self.get() != 0)
@@ -78,10 +76,8 @@ abstract private[scerde] class DeserializerPlatformInstances {
       }
     }
 
-    override def deserializeUnit[V: Visitor](self: ByteBuffer, visitor: V): Result[Visitor[V]#Value] = {
-      void(self)
+    override def deserializeUnit[V: Visitor](self: ByteBuffer, visitor: V): Result[Visitor[V]#Value] =
       visitor.visitUnit()
-    }
 
     override def deserializeSeq[V: Visitor](self: ByteBuffer, visitor: V): Result[Visitor[V]#Value] = ???
 
