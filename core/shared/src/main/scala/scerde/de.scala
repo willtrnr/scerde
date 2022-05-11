@@ -1,127 +1,144 @@
 package scerde
+package de
+
+import scerde.error._
 
 trait Deserialize[T] {
-  def deserialize[D: Deserializer](deserializer: D): Deserializer[D]#Result[T]
+  def deserialize[D](deserializer: D)(implicit D: Deserializer[D]): D.Result[T]
 }
 
 object Deserialize {
 
-  @inline def apply[T](implicit ev: Deserialize[T]): Deserialize[T] = ev
+  @inline final def apply[T](implicit ev: Deserialize[T]): Deserialize[T] = ev
+
+  final class DeserializePartialApply[T: Deserialize] {
+    @inline final def apply[D](deserializer: D)(implicit D: Deserializer[D]): D.Result[T] =
+      D.deserialize(deserializer)
+  }
+
+  @inline final def deserialize[T: Deserialize]: DeserializePartialApply[T] =
+    new DeserializePartialApply[T]
 
 }
 
-trait Deserializer[D] {
+trait Deserializer[-D] {
 
-  type Err = Throwable
+  type Err
 
   final type Result[T] = Either[Err, T]
 
-  @inline implicit def error: Error[Throwable] = Error.errorForThrowable
+  implicit def error: Error[Err]
 
-  @inline final def deserialize[T](self: D)(implicit ev: Deserialize[T]): Result[T] =
-    ev.deserialize(self)(this)
+  @inline final def deserialize[T](self: D)(implicit D: Deserialize[T]): Result[T] =
+    D.deserialize(self)(this)
 
-  def deserializeAny[V: Visitor](self: D, visitor: V): Result[Visitor[V]#Value]
+  def deserializeAny[V](self: D, visitor: V)(implicit V: Visitor[V]): Result[V.Value]
 
-  def deserializeBool[V: Visitor](self: D, visitor: V): Result[Visitor[V]#Value] =
+  def deserializeBool[V](self: D, visitor: V)(implicit V: Visitor[V]): Result[V.Value] =
     this.deserializeAny(self, visitor)
 
-  def deserializeByte[V: Visitor](self: D, visitor: V): Result[Visitor[V]#Value] =
+  def deserializeByte[V](self: D, visitor: V)(implicit V: Visitor[V]): Result[V.Value] =
     this.deserializeAny(self, visitor)
 
-  def deserializeShort[V: Visitor](self: D, visitor: V): Result[Visitor[V]#Value] =
+  def deserializeShort[V](self: D, visitor: V)(implicit V: Visitor[V]): Result[V.Value] =
     this.deserializeAny(self, visitor)
 
-  def deserializeInt[V: Visitor](self: D, visitor: V): Result[Visitor[V]#Value] =
+  def deserializeInt[V](self: D, visitor: V)(implicit V: Visitor[V]): Result[V.Value] =
     this.deserializeAny(self, visitor)
 
-  def deserializeLong[V: Visitor](self: D, visitor: V): Result[Visitor[V]#Value] =
+  def deserializeLong[V](self: D, visitor: V)(implicit V: Visitor[V]): Result[V.Value] =
     this.deserializeAny(self, visitor)
 
-  def deserializeFloat[V: Visitor](self: D, visitor: V): Result[Visitor[V]#Value] =
+  def deserializeFloat[V](self: D, visitor: V)(implicit V: Visitor[V]): Result[V.Value] =
     this.deserializeAny(self, visitor)
 
-  def deserializeDouble[V: Visitor](self: D, visitor: V): Result[Visitor[V]#Value] =
+  def deserializeDouble[V](self: D, visitor: V)(implicit V: Visitor[V]): Result[V.Value] =
     this.deserializeAny(self, visitor)
 
-  def deserializeChar[V: Visitor](self: D, visitor: V): Result[Visitor[V]#Value] =
+  def deserializeChar[V](self: D, visitor: V)(implicit V: Visitor[V]): Result[V.Value] =
     this.deserializeAny(self, visitor)
 
-  def deserializeString[V: Visitor](self: D, visitor: V): Result[Visitor[V]#Value] =
+  def deserializeString[V](self: D, visitor: V)(implicit V: Visitor[V]): Result[V.Value] =
     this.deserializeAny(self, visitor)
 
-  def deserializeBytes[V: Visitor](self: D, visitor: V): Result[Visitor[V]#Value] =
+  def deserializeBytes[V](self: D, visitor: V)(implicit V: Visitor[V]): Result[V.Value] =
     this.deserializeAny(self, visitor)
 
-  def deserializeOption[V: Visitor](self: D, visitor: V): Result[Visitor[V]#Value] =
+  def deserializeOption[V](self: D, visitor: V)(implicit V: Visitor[V]): Result[V.Value] =
     this.deserializeAny(self, visitor)
 
-  def deserializeUnit[V: Visitor](self: D, visitor: V): Result[Visitor[V]#Value] =
+  def deserializeUnit[V](self: D, visitor: V)(implicit V: Visitor[V]): Result[V.Value] =
     this.deserializeAny(self, visitor)
 
-  def deserializeSeq[V: Visitor](self: D, visitor: V): Result[Visitor[V]#Value] =
+  def deserializeSeq[V](self: D, visitor: V)(implicit V: Visitor[V]): Result[V.Value] =
     this.deserializeAny(self, visitor)
 
-  def deserializeMap[V: Visitor](self: D, visitor: V): Result[Visitor[V]#Value] =
+  def deserializeMap[V](self: D, visitor: V)(implicit V: Visitor[V]): Result[V.Value] =
     this.deserializeAny(self, visitor)
+
+}
+
+trait DeserializerThrow[-D] extends Deserializer[D] {
+
+  final override type Err = Throwable
+
+  implicit final override def error: Error[Err] = Error.errorForThrowable
 
 }
 
 object Deserializer extends DeserializerInstances {
 
-  @inline def apply[D](implicit ev: Deserializer[D]): Deserializer[D] = ev
+  @inline final def apply[D](implicit ev: Deserializer[D]): Deserializer[D] = ev
 
-  final class DeserializerOps[D](self: D)(implicit ev: Deserializer[D]) {
+  final class Ops[D](self: D)(implicit final val D: Deserializer[D]) {
 
-    type Result[T] = Deserializer[D]#Result[T]
+    @inline final def deserialize[T: Deserialize]: D.Result[T] =
+      D.deserialize(self)
 
-    @inline def deserialize[T: Deserialize]: Result[T] =
-      ev.deserialize(self)
+    @inline final def deserializeAny[V](visitor: V)(implicit V: Visitor[V]): D.Result[V.Value] =
+      D.deserializeAny(self, visitor)
 
-    @inline def deserializeAny[V: Visitor](visitor: V): Result[Visitor[V]#Value] =
-      ev.deserializeAny(self, visitor)
+    @inline final def deserializeBool[V](visitor: V)(implicit V: Visitor[V]): D.Result[V.Value] =
+      D.deserializeBool(self, visitor)
 
-    @inline def deserializeBool[V: Visitor](visitor: V): Result[Visitor[V]#Value] =
-      ev.deserializeBool(self, visitor)
+    @inline final def deserializeByte[V](visitor: V)(implicit V: Visitor[V]): D.Result[V.Value] =
+      D.deserializeAny(self, visitor)
 
-    @inline def deserializeByte[V: Visitor](visitor: V): Result[Visitor[V]#Value] =
-      ev.deserializeAny(self, visitor)
+    @inline final def deserializeShort[V](visitor: V)(implicit V: Visitor[V]): D.Result[V.Value] =
+      D.deserializeAny(self, visitor)
 
-    @inline def deserializeShort[V: Visitor](visitor: V): Result[Visitor[V]#Value] =
-      ev.deserializeAny(self, visitor)
+    @inline final def deserializeInt[V](visitor: V)(implicit V: Visitor[V]): D.Result[V.Value] =
+      D.deserializeAny(self, visitor)
 
-    @inline def deserializeInt[V: Visitor](visitor: V): Result[Visitor[V]#Value] =
-      ev.deserializeAny(self, visitor)
+    @inline final def deserializeLong[V](visitor: V)(implicit V: Visitor[V]): D.Result[V.Value] =
+      D.deserializeAny(self, visitor)
 
-    @inline def deserializeLong[V: Visitor](visitor: V): Result[Visitor[V]#Value] =
-      ev.deserializeAny(self, visitor)
+    @inline final def deserializeFloat[V](visitor: V)(implicit V: Visitor[V]): D.Result[V.Value] =
+      D.deserializeAny(self, visitor)
 
-    @inline def deserializeFloat[V: Visitor](visitor: V): Result[Visitor[V]#Value] =
-      ev.deserializeAny(self, visitor)
+    @inline final def deserializeDouble[V](visitor: V)(implicit V: Visitor[V]): D.Result[V.Value] =
+      D.deserializeAny(self, visitor)
 
-    @inline def deserializeDouble[V: Visitor](visitor: V): Result[Visitor[V]#Value] =
-      ev.deserializeAny(self, visitor)
+    @inline final def deserializeChar[V](visitor: V)(implicit V: Visitor[V]): D.Result[V.Value] =
+      D.deserializeAny(self, visitor)
 
-    @inline def deserializeChar[V: Visitor](visitor: V): Result[Visitor[V]#Value] =
-      ev.deserializeAny(self, visitor)
+    @inline final def deserializeString[V](visitor: V)(implicit V: Visitor[V]): D.Result[V.Value] =
+      D.deserializeAny(self, visitor)
 
-    @inline def deserializeString[V: Visitor](visitor: V): Result[Visitor[V]#Value] =
-      ev.deserializeAny(self, visitor)
+    @inline final def deserializeBytes[V](visitor: V)(implicit V: Visitor[V]): D.Result[V.Value] =
+      D.deserializeAny(self, visitor)
 
-    @inline def deserializeBytes[V: Visitor](visitor: V): Result[Visitor[V]#Value] =
-      ev.deserializeAny(self, visitor)
+    @inline final def deserializeOption[V](visitor: V)(implicit V: Visitor[V]): D.Result[V.Value] =
+      D.deserializeAny(self, visitor)
 
-    @inline def deserializeOption[V: Visitor](visitor: V): Result[Visitor[V]#Value] =
-      ev.deserializeAny(self, visitor)
+    @inline final def deserializeUnit[V](visitor: V)(implicit V: Visitor[V]): D.Result[V.Value] =
+      D.deserializeAny(self, visitor)
 
-    @inline def deserializeUnit[V: Visitor](visitor: V): Result[Visitor[V]#Value] =
-      ev.deserializeAny(self, visitor)
+    @inline final def deserializeSeq[V](visitor: V)(implicit V: Visitor[V]): D.Result[V.Value] =
+      D.deserializeAny(self, visitor)
 
-    @inline def deserializeSeq[V: Visitor](visitor: V): Result[Visitor[V]#Value] =
-      ev.deserializeAny(self, visitor)
-
-    @inline def deserializeMap[V: Visitor](visitor: V): Result[Visitor[V]#Value] =
-      ev.deserializeAny(self, visitor)
+    @inline final def deserializeMap[V](visitor: V)(implicit V: Visitor[V]): D.Result[V.Value] =
+      D.deserializeAny(self, visitor)
 
   }
 
@@ -129,79 +146,79 @@ object Deserializer extends DeserializerInstances {
 
 abstract private[scerde] class DeserializerInstances extends DeserializerPlatformInstances {
 
-  implicit val deserializerForBool: Deserializer[Boolean] = new Deserializer[Boolean] {
-    override def deserializeAny[V: Visitor](self: Boolean, visitor: V): Result[Visitor[V]#Value] =
-      visitor.visitBool(self)
+  implicit final val deserializerForBool: Deserializer[Boolean] = new DeserializerThrow[Boolean] {
+    final override def deserializeAny[V](self: Boolean, visitor: V)(implicit V: Visitor[V]): Result[V.Value] =
+      V.visitBool(visitor, self)
   }
 
-  implicit val deserializerForByte: Deserializer[Byte] = new Deserializer[Byte] {
-    override def deserializeAny[V: Visitor](self: Byte, visitor: V): Result[Visitor[V]#Value] =
-      visitor.visitByte(self)
+  implicit final val deserializerForByte: Deserializer[Byte] = new DeserializerThrow[Byte] {
+    final override def deserializeAny[V](self: Byte, visitor: V)(implicit V: Visitor[V]): Result[V.Value] =
+      V.visitByte(visitor, self)
   }
 
-  implicit val deserializerForShort: Deserializer[Short] = new Deserializer[Short] {
-    override def deserializeAny[V: Visitor](self: Short, visitor: V): Result[Visitor[V]#Value] =
-      visitor.visitShort(self)
+  implicit final val deserializerForShort: Deserializer[Short] = new DeserializerThrow[Short] {
+    final override def deserializeAny[V](self: Short, visitor: V)(implicit V: Visitor[V]): Result[V.Value] =
+      V.visitShort(visitor, self)
   }
 
-  implicit val deserializerForInt: Deserializer[Int] = new Deserializer[Int] {
-    override def deserializeAny[V: Visitor](self: Int, visitor: V): Result[Visitor[V]#Value] =
-      visitor.visitInt(self)
+  implicit final val deserializerForInt: Deserializer[Int] = new DeserializerThrow[Int] {
+    final override def deserializeAny[V](self: Int, visitor: V)(implicit V: Visitor[V]): Result[V.Value] =
+      V.visitInt(visitor, self)
   }
 
-  implicit val deserializerForLong: Deserializer[Long] = new Deserializer[Long] {
-    override def deserializeAny[V: Visitor](self: Long, visitor: V): Result[Visitor[V]#Value] =
-      visitor.visitLong(self)
+  implicit final val deserializerForLong: Deserializer[Long] = new DeserializerThrow[Long] {
+    final override def deserializeAny[V](self: Long, visitor: V)(implicit V: Visitor[V]): Result[V.Value] =
+      V.visitLong(visitor, self)
   }
 
-  implicit val deserializerForFloat: Deserializer[Float] = new Deserializer[Float] {
-    override def deserializeAny[V: Visitor](self: Float, visitor: V): Result[Visitor[V]#Value] =
-      visitor.visitFloat(self)
+  implicit final val deserializerForFloat: Deserializer[Float] = new DeserializerThrow[Float] {
+    final override def deserializeAny[V](self: Float, visitor: V)(implicit V: Visitor[V]): Result[V.Value] =
+      V.visitFloat(visitor, self)
   }
 
-  implicit val deserializerForDouble: Deserializer[Double] = new Deserializer[Double] {
-    override def deserializeAny[V: Visitor](self: Double, visitor: V): Result[Visitor[V]#Value] =
-      visitor.visitDouble(self)
+  implicit final val deserializerForDouble: Deserializer[Double] = new DeserializerThrow[Double] {
+    final override def deserializeAny[V](self: Double, visitor: V)(implicit V: Visitor[V]): Result[V.Value] =
+      V.visitDouble(visitor, self)
   }
 
-  implicit val deserializerForChar: Deserializer[Char] = new Deserializer[Char] {
-    override def deserializeAny[V: Visitor](self: Char, visitor: V): Result[Visitor[V]#Value] =
-      visitor.visitChar(self)
+  implicit final val deserializerForChar: Deserializer[Char] = new DeserializerThrow[Char] {
+    final override def deserializeAny[V](self: Char, visitor: V)(implicit V: Visitor[V]): Result[V.Value] =
+      V.visitChar(visitor, self)
   }
 
-  implicit val deserializerForString: Deserializer[String] = new Deserializer[String] {
-    override def deserializeAny[V: Visitor](self: String, visitor: V): Result[Visitor[V]#Value] =
-      visitor.visitString(self)
+  implicit final val deserializerForString: Deserializer[String] = new DeserializerThrow[String] {
+    final override def deserializeAny[V](self: String, visitor: V)(implicit V: Visitor[V]): Result[V.Value] =
+      V.visitString(visitor, self)
   }
 
-  implicit val deserializerForBytes: Deserializer[Array[Byte]] = new Deserializer[Array[Byte]] {
-    override def deserializeAny[V: Visitor](self: Array[Byte], visitor: V): Result[Visitor[V]#Value] =
-      visitor.visitBytes(self)
+  implicit final val deserializerForBytes: Deserializer[Array[Byte]] = new DeserializerThrow[Array[Byte]] {
+    final override def deserializeAny[V](self: Array[Byte], visitor: V)(implicit V: Visitor[V]): Result[V.Value] =
+      V.visitBytes(visitor, self)
   }
 
-  implicit def deserializerForOption[T](implicit ev: Deserializer[T]): Deserializer[Option[T]] =
+  implicit final def deserializerForOption[T](implicit D: Deserializer[T]): Deserializer[Option[T]] =
     new Deserializer[Option[T]] {
 
-      override type Err = Deserializer[T]#Err
+      final override type Err = D.Err
 
-      override def error: Error[Err] = ev.error
+      implicit final override def error: Error[Err] = D.error
 
-      override def deserializeAny[V: Visitor](self: Option[T], visitor: V): Result[Visitor[V]#Value] =
+      final override def deserializeAny[V](self: Option[T], visitor: V)(implicit V: Visitor[V]): Result[V.Value] =
         self match {
-          case Some(value) => visitor.visitSome(value)
-          case None => visitor.visitNone[Err]()
+          case Some(value) => V.visitSome(visitor, value)
+          case None => V.visitNone(visitor)
         }
 
     }
 
-  implicit val deserializerForUnit: Deserializer[Unit] = new Deserializer[Unit] {
-    override def deserializeAny[V: Visitor](self: Unit, visitor: V): Result[Visitor[V]#Value] =
-      visitor.visitUnit()
+  implicit final val deserializerForUnit: Deserializer[Unit] = new DeserializerThrow[Unit] {
+    final override def deserializeAny[V](self: Unit, visitor: V)(implicit V: Visitor[V]): Result[V.Value] =
+      V.visitUnit(visitor)
   }
 
 }
 
-trait Visitor[V] {
+trait Visitor[-V] {
 
   type Value
 
@@ -211,7 +228,7 @@ trait Visitor[V] {
 
   def visitBool[E: Error](self: V, value: Boolean): Result[E] = {
     void(self, value)
-    Left(Error[E].custom(this.expecting()))
+    Left(Error.custom(this.expecting()))
   }
 
   def visitByte[E: Error](self: V, value: Byte): Result[E] =
@@ -225,7 +242,7 @@ trait Visitor[V] {
 
   def visitLong[E: Error](self: V, value: Long): Result[E] = {
     void(self, value)
-    Left(Error[E].custom(this.expecting()))
+    Left(Error.custom(this.expecting()))
   }
 
   def visitFloat[E: Error](self: V, value: Float): Result[E] =
@@ -233,7 +250,7 @@ trait Visitor[V] {
 
   def visitDouble[E: Error](self: V, value: Double): Result[E] = {
     void(self, value)
-    Left(Error[E].custom(this.expecting()))
+    Left(Error.custom(this.expecting()))
   }
 
   def visitChar[E: Error](self: V, value: Char): Result[E] =
@@ -241,99 +258,94 @@ trait Visitor[V] {
 
   def visitString[E: Error](self: V, value: String): Result[E] = {
     void(self, value)
-    Left(Error[E].custom(this.expecting()))
+    Left(Error.custom(this.expecting()))
   }
 
   def visitBytes[E: Error](self: V, value: Array[Byte]): Result[E] = {
     void(self, value)
-    Left(Error[E].custom(this.expecting()))
+    Left(Error.custom(this.expecting()))
   }
 
   def visitNone[E: Error](self: V): Result[E] = {
     void(self)
-    Left(Error[E].custom(this.expecting()))
+    Left(Error.custom(this.expecting()))
   }
 
-  def visitSome[D](self: V, deserializer: D)(implicit ev: Deserializer[D]): Result[Deserializer[D]#Err] = {
-    import ev.error
+  def visitSome[D](self: V, deserializer: D)(implicit D: Deserializer[D]): Result[D.Err] = {
     void(self, deserializer)
-    Left(Error[ev.Err].custom(this.expecting()))
+    Left(Error.custom[D.Err](this.expecting()))
   }
 
   def visitUnit[E: Error](self: V): Result[E] = {
     void(self)
-    Left(Error[E].custom(this.expecting()))
+    Left(Error.custom(this.expecting()))
   }
 
-  def visitSeq[A](self: V, seq: A)(implicit ev: SeqAccess[A]): Result[SeqAccess[A]#Err] = {
-    import ev.error
+  def visitSeq[A](self: V, seq: A)(implicit A: SeqAccess[A]): Result[A.Err] = {
     void(self, seq)
-    Left(Error[ev.Err].custom(this.expecting()))
+    Left(Error.custom[A.Err](this.expecting()))
   }
 
-  def visitMap[A](self: V, map: A)(implicit ev: MapAccess[A]): Result[MapAccess[A]#Err] = {
-    import ev.error
+  def visitMap[A](self: V, map: A)(implicit A: MapAccess[A]): Result[A.Err] = {
     void(self, map)
-    Left(Error[ev.Err].custom(this.expecting()))
+    Left(Error.custom[A.Err](this.expecting()))
   }
 
 }
 
 object Visitor {
 
-  @inline def apply[V](implicit ev: Visitor[V]): Visitor[V] = ev
+  @inline final def apply[V](implicit ev: Visitor[V]): Visitor[V] = ev
 
-  final class VisitorOps[V](self: V)(implicit ev: Visitor[V]) {
+  final class Ops[V](self: V)(implicit final val V: Visitor[V]) {
 
-    type Result[E] = Visitor[V]#Result[E]
+    @inline final def expecting(): String =
+      V.expecting()
 
-    @inline def expecting(): String =
-      ev.expecting()
+    @inline final def visitBool[E: Error](value: Boolean): V.Result[E] =
+      V.visitBool(self, value)
 
-    @inline def visitBool[E: Error](value: Boolean): Result[E] =
-      ev.visitBool(self, value)
+    @inline final def visitByte[E: Error](value: Byte): V.Result[E] =
+      V.visitByte(self, value)
 
-    @inline def visitByte[E: Error](value: Byte): Result[E] =
-      ev.visitByte(self, value)
+    @inline final def visitShort[E: Error](value: Short): V.Result[E] =
+      V.visitShort(self, value)
 
-    @inline def visitShort[E: Error](value: Short): Result[E] =
-      ev.visitShort(self, value)
+    @inline final def visitInt[E: Error](value: Int): V.Result[E] =
+      V.visitInt(self, value)
 
-    @inline def visitInt[E: Error](value: Int): Result[E] =
-      ev.visitInt(self, value)
+    @inline final def visitLong[E: Error](value: Long): V.Result[E] =
+      V.visitLong(self, value)
 
-    @inline def visitLong[E: Error](value: Long): Result[E] =
-      ev.visitLong(self, value)
+    @inline final def visitFloat[E: Error](value: Float): V.Result[E] =
+      V.visitFloat(self, value)
 
-    @inline def visitFloat[E: Error](value: Float): Result[E] =
-      ev.visitFloat(self, value)
+    @inline final def visitDouble[E: Error](value: Double): V.Result[E] =
+      V.visitDouble(self, value)
 
-    @inline def visitDouble[E: Error](value: Double): Result[E] =
-      ev.visitDouble(self, value)
+    @inline final def visitChar[E: Error](value: Char): V.Result[E] =
+      V.visitChar(self, value)
 
-    @inline def visitChar[E: Error](value: Char): Result[E] =
-      ev.visitChar(self, value)
+    @inline final def visitString[E: Error](value: String): V.Result[E] =
+      V.visitString(self, value)
 
-    @inline def visitString[E: Error](value: String): Result[E] =
-      ev.visitString(self, value)
+    @inline final def visitBytes[E: Error](value: Array[Byte]): V.Result[E] =
+      V.visitBytes(self, value)
 
-    @inline def visitBytes[E: Error](value: Array[Byte]): Result[E] =
-      ev.visitBytes(self, value)
+    @inline final def visitNone[E: Error](): V.Result[E] =
+      V.visitNone(self)
 
-    @inline def visitNone[E: Error](): Result[E] =
-      ev.visitNone(self)
+    @inline final def visitSome[D](deserializer: D)(implicit D: Deserializer[D]): V.Result[D.Err] =
+      V.visitSome(self, deserializer)
 
-    @inline def visitSome[D: Deserializer](deserializer: D): Result[Deserializer[D]#Err] =
-      ev.visitSome(self, deserializer)
+    @inline final def visitUnit[E: Error](): V.Result[E] =
+      V.visitUnit(self)
 
-    @inline def visitUnit[E: Error](): Result[E] =
-      ev.visitUnit(self)
+    @inline final def visitSeq[A](seq: A)(implicit A: SeqAccess[A]): V.Result[A.Err] =
+      V.visitSeq(self, seq)
 
-    @inline def visitSeq[A: SeqAccess](seq: A): Result[SeqAccess[A]#Err] =
-      ev.visitSeq(self, seq)
-
-    @inline def visitMap[A: MapAccess](map: A): Result[MapAccess[A]#Err] =
-      ev.visitMap(self, map)
+    @inline final def visitMap[A](map: A)(implicit A: MapAccess[A]): V.Result[A.Err] =
+      V.visitMap(self, map)
 
   }
 
@@ -345,14 +357,23 @@ trait SeqAccess[A] {
 
   final type Result[T] = Either[Err, T]
 
-  @inline implicit def error: Error[Err] = Error.errorForThrowable
+  implicit def error: Error[Err]
 
   def nextElement[T: Deserialize](self: A): Result[Option[T]]
+
+}
+
+trait SeqAccessThrow[A] extends SeqAccess[A] {
+
+  final override type Err = Throwable
+
+  implicit final override def error: Error[Err] = Error.errorForThrowable
+
 }
 
 object SeqAccess {
 
-  @inline def apply[A](implicit ev: SeqAccess[A]): SeqAccess[A] = ev
+  @inline final def apply[A](implicit ev: SeqAccess[A]): SeqAccess[A] = ev
 
 }
 
@@ -362,7 +383,7 @@ trait MapAccess[A] {
 
   final type Result[T] = Either[Err, T]
 
-  @inline implicit def error: Error[Err] = Error.errorForThrowable
+  implicit def error: Error[Err] = Error.errorForThrowable
 
   def nextKey[K: Deserialize](self: A): Result[Option[K]]
 
@@ -381,8 +402,16 @@ trait MapAccess[A] {
 
 }
 
+trait MapAccessThrow[A] extends MapAccess[A] {
+
+  final override type Err = Throwable
+
+  implicit final override def error: Error[Err] = Error.errorForThrowable
+
+}
+
 object MapAccess {
 
-  @inline def apply[A](implicit ev: MapAccess[A]): MapAccess[A] = ev
+  @inline final def apply[A](implicit ev: MapAccess[A]): MapAccess[A] = ev
 
 }

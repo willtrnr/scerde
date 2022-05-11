@@ -1,87 +1,98 @@
 package scerde
+package de
 
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets.UTF_8
 
 abstract private[scerde] class DeserializerPlatformInstances {
 
-  implicit val deserializerForByteBuffer: Deserializer[ByteBuffer] = new Deserializer[ByteBuffer] {
+  implicit final val deserializerForByteBuffer: Deserializer[ByteBuffer] = new DeserializerThrow[ByteBuffer] {
 
-    override def deserializeAny[V: Visitor](self: ByteBuffer, visitor: V): Result[Visitor[V]#Value] =
+    final override def deserializeAny[V](self: ByteBuffer, visitor: V)(implicit V: Visitor[V]): Result[V.Value] =
       Left(new UnsupportedOperationException("non self-describing format"))
 
-    override def deserializeBool[V: Visitor](self: ByteBuffer, visitor: V): Result[Visitor[V]#Value] = etri {
-      visitor.visitBool(self.get() != 0)
-    }
-
-    override def deserializeByte[V: Visitor](self: ByteBuffer, visitor: V): Result[Visitor[V]#Value] = etri {
-      visitor.visitByte(self.get())
-    }
-
-    override def deserializeShort[V: Visitor](self: ByteBuffer, visitor: V): Result[Visitor[V]#Value] = etri {
-      visitor.visitShort(self.getShort())
-    }
-
-    override def deserializeInt[V: Visitor](self: ByteBuffer, visitor: V): Result[Visitor[V]#Value] = etri {
-      visitor.visitInt(self.getInt())
-    }
-
-    override def deserializeLong[V: Visitor](self: ByteBuffer, visitor: V): Result[Visitor[V]#Value] = etri {
-      visitor.visitLong(self.getLong())
-    }
-
-    override def deserializeFloat[V: Visitor](self: ByteBuffer, visitor: V): Result[Visitor[V]#Value] = etri {
-      visitor.visitFloat(self.getFloat())
-    }
-
-    override def deserializeDouble[V: Visitor](self: ByteBuffer, visitor: V): Result[Visitor[V]#Value] = etri {
-      visitor.visitDouble(self.getDouble())
-    }
-
-    override def deserializeChar[V: Visitor](self: ByteBuffer, visitor: V): Result[Visitor[V]#Value] = etri {
-      visitor.visitChar(self.getChar())
-    }
-
-    override def deserializeString[V: Visitor](self: ByteBuffer, visitor: V): Result[Visitor[V]#Value] = etri {
-      val len = self.getInt()
-      if (len < 0) {
-        Left(new IllegalArgumentException("invalid string length: " + len))
-      } else if (len == 0) {
-        visitor.visitString("")
-      } else {
-        val buf = Array.ofDim[Byte](len)
-        self.get(buf)
-        visitor.visitString(new String(buf, UTF_8))
+    final override def deserializeBool[V](self: ByteBuffer, visitor: V)(implicit V: Visitor[V]): Result[V.Value] =
+      etri {
+        V.visitBool(visitor, self.get() != 0)
       }
-    }
 
-    override def deserializeBytes[V: Visitor](self: ByteBuffer, visitor: V): Result[Visitor[V]#Value] = etri {
-      val len = self.getInt()
-      if (len < 0) {
-        Left(new IllegalArgumentException("invalid byte array length: " + len))
-      } else if (len == 0) {
-        visitor.visitBytes(Array.emptyByteArray)
-      } else {
-        val buf = Array.ofDim[Byte](len)
-        self.get(buf)
-        visitor.visitBytes(buf)
+    final override def deserializeByte[V](self: ByteBuffer, visitor: V)(implicit V: Visitor[V]): Result[V.Value] =
+      etri {
+        V.visitByte(visitor, self.get())
       }
-    }
 
-    override def deserializeOption[V: Visitor](self: ByteBuffer, visitor: V): Result[Visitor[V]#Value] = etri {
-      if (self.get() != 0) {
-        visitor.visitSome(self)(this)
-      } else {
-        visitor.visitNone()
+    final override def deserializeShort[V](self: ByteBuffer, visitor: V)(implicit V: Visitor[V]): Result[V.Value] =
+      etri {
+        V.visitShort(visitor, self.getShort())
       }
+
+    final override def deserializeInt[V](self: ByteBuffer, visitor: V)(implicit V: Visitor[V]): Result[V.Value] = etri {
+      V.visitInt(visitor, self.getInt())
     }
 
-    override def deserializeUnit[V: Visitor](self: ByteBuffer, visitor: V): Result[Visitor[V]#Value] =
-      visitor.visitUnit()
+    final override def deserializeLong[V](self: ByteBuffer, visitor: V)(implicit V: Visitor[V]): Result[V.Value] =
+      etri {
+        V.visitLong(visitor, self.getLong())
+      }
 
-    override def deserializeSeq[V: Visitor](self: ByteBuffer, visitor: V): Result[Visitor[V]#Value] = ???
+    final override def deserializeFloat[V](self: ByteBuffer, visitor: V)(implicit V: Visitor[V]): Result[V.Value] =
+      etri {
+        V.visitFloat(visitor, self.getFloat())
+      }
 
-    override def deserializeMap[V: Visitor](self: ByteBuffer, visitor: V): Result[Visitor[V]#Value] = ???
+    final override def deserializeDouble[V](self: ByteBuffer, visitor: V)(implicit V: Visitor[V]): Result[V.Value] =
+      etri {
+        V.visitDouble(visitor, self.getDouble())
+      }
+
+    final override def deserializeChar[V](self: ByteBuffer, visitor: V)(implicit V: Visitor[V]): Result[V.Value] =
+      etri {
+        V.visitChar(visitor, self.getChar())
+      }
+
+    final override def deserializeString[V](self: ByteBuffer, visitor: V)(implicit V: Visitor[V]): Result[V.Value] =
+      etri {
+        val len = self.getInt()
+        if (len < 0) {
+          Left(new IllegalArgumentException("invalid string length: " + len))
+        } else if (len == 0) {
+          V.visitString(visitor, "")
+        } else {
+          val buf = Array.ofDim[Byte](len)
+          self.get(buf)
+          V.visitString(visitor, new String(buf, UTF_8))
+        }
+      }
+
+    final override def deserializeBytes[V](self: ByteBuffer, visitor: V)(implicit V: Visitor[V]): Result[V.Value] =
+      etri {
+        val len = self.getInt()
+        if (len < 0) {
+          Left(new IllegalArgumentException("invalid byte array length: " + len))
+        } else if (len == 0) {
+          V.visitBytes(visitor, Array.emptyByteArray)
+        } else {
+          val buf = Array.ofDim[Byte](len)
+          self.get(buf)
+          V.visitBytes(visitor, buf)
+        }
+      }
+
+    final override def deserializeOption[V](self: ByteBuffer, visitor: V)(implicit V: Visitor[V]): Result[V.Value] =
+      etri {
+        if (self.get() != 0) {
+          V.visitSome(visitor, self)(this)
+        } else {
+          V.visitNone(visitor)
+        }
+      }
+
+    final override def deserializeUnit[V](self: ByteBuffer, visitor: V)(implicit V: Visitor[V]): Result[V.Value] =
+      V.visitUnit(visitor)
+
+    final override def deserializeSeq[V](self: ByteBuffer, visitor: V)(implicit V: Visitor[V]): Result[V.Value] = ???
+
+    final override def deserializeMap[V](self: ByteBuffer, visitor: V)(implicit V: Visitor[V]): Result[V.Value] = ???
 
   }
 
