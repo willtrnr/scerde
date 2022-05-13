@@ -202,4 +202,4 @@ object Serializer extends SerializerInstances {
 
 }
 
-abstract private[scerde] class SerializerInstances extends SerializerPlatformInstances
+abstract private[scerde] class SerializerInstances extends PlatformSerializerInstances

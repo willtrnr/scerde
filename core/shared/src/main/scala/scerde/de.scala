@@ -144,7 +144,7 @@ object Deserializer extends DeserializerInstances {
 
 }
 
-abstract private[scerde] class DeserializerInstances extends DeserializerPlatformInstances {
+abstract private[scerde] class DeserializerInstances extends PlatformDeserializerInstances {
 
   implicit final val deserializerForBool: Deserializer[Boolean] = new DeserializerThrow[Boolean] {
     final override def deserializeAny[V](self: Boolean, visitor: V)(implicit V: Visitor[V]): Result[V.Value] =
@@ -273,7 +273,7 @@ trait Visitor[-V] {
 
   def visitSome[D](self: V, deserializer: D)(implicit D: Deserializer[D]): Result[D.Err] = {
     void(self, deserializer)
-    Left(Error.custom[D.Err](this.expecting()))
+    Left(Error.custom(this.expecting()))
   }
 
   def visitUnit[E: Error](self: V): Result[E] = {
@@ -283,12 +283,12 @@ trait Visitor[-V] {
 
   def visitSeq[A](self: V, seq: A)(implicit A: SeqAccess[A]): Result[A.Err] = {
     void(self, seq)
-    Left(Error.custom[A.Err](this.expecting()))
+    Left(Error.custom(this.expecting()))
   }
 
   def visitMap[A](self: V, map: A)(implicit A: MapAccess[A]): Result[A.Err] = {
     void(self, map)
-    Left(Error.custom[A.Err](this.expecting()))
+    Left(Error.custom(this.expecting()))
   }
 
 }
@@ -353,7 +353,7 @@ object Visitor {
 
 trait SeqAccess[A] {
 
-  type Err = Throwable
+  type Err
 
   final type Result[T] = Either[Err, T]
 
@@ -379,11 +379,11 @@ object SeqAccess {
 
 trait MapAccess[A] {
 
-  type Err = Throwable
+  type Err
 
   final type Result[T] = Either[Err, T]
 
-  implicit def error: Error[Err] = Error.errorForThrowable
+  implicit def error: Error[Err]
 
   def nextKey[K: Deserialize](self: A): Result[Option[K]]
 

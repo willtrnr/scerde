@@ -4,7 +4,7 @@ package de
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets.UTF_8
 
-abstract private[scerde] class DeserializerPlatformInstances {
+private[scerde] trait PlatformDeserializerInstances {
 
   implicit final val deserializerForByteBuffer: Deserializer[ByteBuffer] = new DeserializerThrow[ByteBuffer] {
 

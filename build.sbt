@@ -37,3 +37,4 @@ def scerdeCrossModule(module: String): CrossProject =
     .configure(scerdeProject(module))
     .jvmSettings(ScerdeBuild.defaultJvmSettings)
     .jsSettings(ScerdeBuild.defaultJsSettings)
+    .nativeSettings(ScerdeBuild.defaultNativeSettings)

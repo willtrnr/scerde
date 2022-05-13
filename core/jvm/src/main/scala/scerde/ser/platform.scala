@@ -4,7 +4,7 @@ package ser
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets.UTF_8
 
-abstract private[scerde] class SerializerPlatformInstances {
+private[scerde] trait PlatformSerializerInstances {
 
   implicit final val serializerForByteBuffer: Serializer[ByteBuffer] = new SerializerThrow[ByteBuffer] {
 

@@ -16,12 +16,6 @@ object Error extends ErrorInstances {
 
 abstract private[scerde] class ErrorInstances extends LowPriorityErrorInstances {
 
-  implicit final def errorProjectionForSerializer[S](implicit ev: ser.Serializer[S]): Error[ev.Err] =
-    ev.error
-
-  implicit final def errorProjectionForDeserializer[D](implicit ev: de.Deserializer[D]): Error[ev.Err] =
-    ev.error
-
   implicit final def errorProjectionForSeqAccess[A](implicit ev: de.SeqAccess[A]): Error[ev.Err] =
     ev.error
 
@@ -30,7 +24,17 @@ abstract private[scerde] class ErrorInstances extends LowPriorityErrorInstances 
 
 }
 
-abstract private[scerde] class LowPriorityErrorInstances {
+abstract private[scerde] class LowPriorityErrorInstances extends VeryLowPriorityErrorInstances {
+
+  implicit final def errorProjectionForSerializer[S](implicit ev: ser.Serializer[S]): Error[ev.Err] =
+    ev.error
+
+  implicit final def errorProjectionForDeserializer[D](implicit ev: de.Deserializer[D]): Error[ev.Err] =
+    ev.error
+
+}
+
+abstract private[scerde] class VeryLowPriorityErrorInstances {
 
   implicit final val errorForString: Error[String] = new Error[String] {
     final override def custom(msg: String): String = msg

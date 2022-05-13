@@ -23,7 +23,7 @@ object ScerdeBuild {
 
     scmInfo := Some(ScmInfo(
       url("https://github.com/willtrnr/scerde"),
-      "scm:git:htts://github.com/willtrnr/scerde.git",
+      "scm:git:https://github.com/willtrnr/scerde.git",
       "scm:git:git@github.com:willtrnr/scerde.git"
     )),
 
@@ -31,9 +31,18 @@ object ScerdeBuild {
   )
 
   val defaultJvmSettings = Def.settings(
-    Compile / compile / scalacOptions ++= Seq(
-      "-target:jvm-1.8",
-    ),
+    Dependencies.versionsJvm,
+
+    Compile / compile / scalacOptions ++= {
+      CrossVersion.partialVersion(scalaVersion.value) match {
+        case Some((3, _)) =>
+          Seq.empty
+        case _ =>
+          Seq(
+            "-target:jvm-1.8",
+          )
+      }
+    },
 
     Compile / compile / javacOptions ++= Seq(
       "-source", "1.8",
@@ -41,8 +50,6 @@ object ScerdeBuild {
       "-Xlint:all",
       "-Werror",
     ),
-
-    Dependencies.versionsJvm,
 
     Test / fork := true,
 
@@ -68,11 +75,10 @@ object ScerdeBuild {
     },
 
     // FIXME: Tests fail on JS platform with coverage enabled
-    Test / compile / sources := {
-      if (coverageEnabled.value)
-        Seq.empty
-      else
-        (Test / compile / sources).value
+    Test / test := {
+      if (!coverageEnabled.value) {
+          (Test / test).value
+      }
     },
 
     // Release with SJS 1.x support
@@ -86,9 +92,15 @@ object ScerdeBuild {
     missinglinkCheck := {},
   )
 
-  val javaOnlySettings = Def.settings(
-    crossPaths := false,
-    autoScalaLibrary := false,
+  val defaultNativeSettings = Def.settings(
+    Dependencies.versionsNative,
+
+    // Explicit deps also does not work correctly
+    unusedCompileDependencies := Set.empty,
+    undeclaredCompileDependencies := Set.empty,
+
+    // And neither does missinglink
+    missinglinkCheck := {},
   )
 
   val rootSettings = Def.settings(
